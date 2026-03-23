@@ -59,7 +59,7 @@ namespace PCStatus
         /*
          * The following function checks the database if theres already a pc with the same name, so it doesn't save it again.
          */
-        public static int CheckForPCName()
+        public static bool CheckForPCName()
         {
             //We create a new SQL Connection Instance
             using (SqlConnection connection = new SqlConnection(ConnectionSql()))
@@ -85,11 +85,12 @@ namespace PCStatus
                         if (result_rows.Read())
                         {
                             //Console.WriteLine("Data found");
-                            return 1;
+                            return true;
                         }
                         else
                         {
-                            Console.WriteLine("Error");
+                            //[Testing Line] Uncomment the following line to test the result
+                            //Console.WriteLine("Error");
                         }
                     }
                     catch (Exception ex)
@@ -98,13 +99,13 @@ namespace PCStatus
                     }
                 }
             }
-            return 0;
+            return false;
         }
         /*
          * The following function inserts a NEW pc to the database. Just in case theres not a registry made before
          * This function runs ONLY the first time!
          */
-        public static int InsertPCToDB()
+        public static bool InsertPCToDB()
         {
             //We call the XML Function, to save info directly to SQL. Dani, Make sure to add every element from the XML
             try
@@ -140,7 +141,7 @@ namespace PCStatus
                             {
                                 //[Test line] Uncomment for testing pruposes
                                 //Console.WriteLine("Data added successfully");
-                                return 1;
+                                return true;
                             }
                         }
                         catch (Exception ex)
@@ -154,13 +155,13 @@ namespace PCStatus
             {
                 Console.WriteLine($"Error: {e.Message}");
             }
-            return 0;
+            return false;
         }
         /*
          * The following function updates an already existing registry of a pc in the database.
          * We can call this function each time we want
          */
-        public static int UpdatePCToDB()
+        public static bool UpdatePCToDB()
         {
             //We call the XML Function, to save info directly to SQL. Dani, Make sure to add every element from the XML
             try
@@ -200,14 +201,14 @@ namespace PCStatus
                             {
                                 //[TESTING LINE] Uncomment the following line to test the result
                                 //Console.WriteLine("UPDATE !Data added successfully");
-                                return 1;
+                                return true;
+                                
                             }
-                        }
+                        }             
                         catch (Exception ex)
                         {
                             Console.WriteLine(ex.ToString());
                         }
-                        connection.Close();
                     }
                 }
             }
@@ -215,7 +216,7 @@ namespace PCStatus
             {
                 Console.WriteLine(e.ToString());                
             }
-            return 0;
+            return false;
         }
         /*
         * The following function, saves the PC Name in the variable 'pcName'
@@ -263,13 +264,34 @@ namespace PCStatus
              */
             return null;
         }
-        static void Main(string[] args)
+        /*
+         * Runs UpdatePCToDB function every x minutes
+         */
+        static async Task RunUpdateLoopAsync()
         {
-            if (CheckForPCName() != 1)
+            //Here you can swap the '1' to any minute you want, dani!!
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+
+            while (await timer.WaitForNextTickAsync())
             {
-                InsertPCToDB();
+                Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Running UpdatePCToDB...");
+                UpdatePCToDB();
+            }
+        }
+        /*
+         * Main function, here we check if the pc registry already exists, 
+         * if it doesn't we create a new one, and if it does, we update it.
+         */
+        static async Task Main(string[] args)
+        {
+            if (!CheckForPCName())
+            {
+            InsertPCToDB();
             }
             UpdatePCToDB();
+
+            //Function that runs the update every x minutes, just to keep the registry alive and updated
+            await RunUpdateLoopAsync();
         }
     }
 }
