@@ -160,7 +160,7 @@ namespace PCStatus
                                 
                             }else if (affected_rows == 0)
                             {
-                                InsertPCToDB();
+                                return InsertPCToDB();
                             }
                         }             
                         catch (Exception ex)
