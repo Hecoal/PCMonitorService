@@ -42,7 +42,7 @@ namespace PCStatus
             return (buliding, line);
         }
         /*
-         * The following function creates the connection string for gloabally use.
+         * The following function creates the connection string for MSSQL for gloabally use.
          */
         public static string ConnectionSql()
         {
@@ -55,51 +55,6 @@ namespace PCStatus
              string connectionString = "Server = HECOAL; Database = Development_DB; Trusted_Connection=True; TrustServerCertificate = True";
 
             return connectionString;
-        }
-        /*
-         * The following function checks the database if theres already a pc with the same name, so it doesn't save it again.
-         */
-        public static bool CheckForPCName()
-        {
-            //We create a new SQL Connection Instance
-            using (SqlConnection connection = new SqlConnection(ConnectionSql()))
-            {
-                //We open the sql connection Just don't forget to close it each time you open it!!!
-                connection.Open();
-
-                //First we check if the PC is already on the db
-                //We pass the sql query
-                string query = "SELECT * FROM PCStatus WHERE pc_Name = @pc_name";
-
-                //We pass each parameter
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@pc_Name", GetPCName());
-                    try
-                    {
-                        SqlDataReader result_rows = command.ExecuteReader();
-
-                        //If the results_row can read, means that there were results, and the pc exists.
-                        //In this case, we can't run a 'INSTERT' statement
-
-                        if (result_rows.Read())
-                        {
-                            //Console.WriteLine("Data found");
-                            return true;
-                        }
-                        else
-                        {
-                            //[Testing Line] Uncomment the following line to test the result
-                            //Console.WriteLine("Error");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.ToString());
-                    }
-                }
-            }
-            return false;
         }
         /*
          * The following function inserts a NEW pc to the database. Just in case theres not a registry made before
@@ -203,6 +158,9 @@ namespace PCStatus
                                 //Console.WriteLine("UPDATE !Data added successfully");
                                 return true;
                                 
+                            }else if (affected_rows == 0)
+                            {
+                                InsertPCToDB();
                             }
                         }             
                         catch (Exception ex)
@@ -284,10 +242,6 @@ namespace PCStatus
          */
         static async Task Main(string[] args)
         {
-            if (!CheckForPCName())
-            {
-            InsertPCToDB();
-            }
             UpdatePCToDB();
 
             //Function that runs the update every x minutes, just to keep the registry alive and updated
